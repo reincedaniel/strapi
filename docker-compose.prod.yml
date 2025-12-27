@@ -1,62 +1,71 @@
-version: '3.8'
-
+version: '3.7'
 services:
   strapi:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      args:
-        NODE_ENV: production
-    container_name: strapi-app
+    image: strapi/strapi:latest
+    container_name: strapi
     restart: unless-stopped
-    ports:
-      - '1337:1337'
-    environment:
-      - NODE_ENV=production
-      - HOST=0.0.0.0
-      - PORT=1337
-      # Configure suas variáveis de ambiente do Strapi aqui
-      # - DATABASE_CLIENT=postgres
-      # - DATABASE_HOST=postgres
-      # - DATABASE_PORT=5432
-      # - DATABASE_NAME=strapi
-      # - DATABASE_USERNAME=strapi
-      # - DATABASE_PASSWORD=strapi
-      # - JWT_SECRET=your-jwt-secret
-      # - ADMIN_JWT_SECRET=your-admin-jwt-secret
-      # - APP_KEYS=your-app-keys
-    volumes:
-      # Persiste uploads e dados
-      - ./public/uploads:/opt/app/public/uploads
-      - ./database:/opt/app/database
-      # Opcional: persiste logs
-      - ./logs:/opt/app/logs
     networks:
-      - strapi-network
-    # Descomente se usar banco de dados
-    # depends_on:
-    #   - postgres
+      - KienuGroupNet
+    environment:
+      DATABASE_CLIENT: postgres
+      DATABASE_NAME: strapi_db
+      DATABASE_HOST: strapi_db
+      DATABASE_PORT: 5432
+      DATABASE_USERNAME: strapi_user
+      DATABASE_PASSWORD: strapi_pass
+      APP_KEYS: random_app_key_1,random_app_key_2,random_app_key_3,random_app_key_4
+      API_TOKEN_SALT: random_salt
+      ADMIN_JWT_SECRET: random_admin_jwt
+      JWT_SECRET: random_jwt_secret
+      NODE_ENV: production
+      TZ: America/Sao_Paulo
+    volumes:
+      - ./strapi-app:/srv/app
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1024M
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.strapi.rule=Host(`strapi.vps.tolibre.com`)
+        - traefik.http.routers.strapi.entrypoints=websecure
+        - traefik.http.routers.strapi.tls.certresolver=letsencryptresolver
+        - traefik.http.services.strapi.loadbalancer.server.port=1337
+        - traefik.http.services.strapi.loadbalancer.passHostHeader=true
+    depends_on:
+      - strapi_db
 
-  # Descomente para usar PostgreSQL
-  # postgres:
-  #   image: postgres:15-alpine
-  #   container_name: strapi-postgres
-  #   restart: unless-stopped
-  #   environment:
-  #     POSTGRES_USER: strapi
-  #     POSTGRES_PASSWORD: strapi
-  #     POSTGRES_DB: strapi
-  #   volumes:
-  #     - postgres_data:/var/lib/postgresql/data
-  #   networks:
-  #     - strapi-network
-  #   ports:
-  #     - "5432:5432"
+  strapi_db:
+    image: postgres:15
+    container_name: strapi_db
+    restart: unless-stopped
+    networks:
+      - KienuGroupNet
+    environment:
+      POSTGRES_DB: strapi_db
+      POSTGRES_USER: strapi_user
+      POSTGRES_PASSWORD: strapi_pass
+    volumes:
+      - strapi_postgres:/var/lib/postgresql/data
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1024M
+
+volumes:
+  strapi_postgres:
+    external: false
 
 networks:
-  strapi-network:
-    driver: bridge
-# Descomente se usar PostgreSQL
-# volumes:
-#   postgres_data:
-
+  KienuGroupNet:
+    external: true

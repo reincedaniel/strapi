@@ -81,18 +81,25 @@ COPY .yarn ./.yarn
 RUN yarn install --production --immutable && \
     yarn cache clean
 
-# Copia arquivos buildados e necessários do stage builder
-COPY --from=builder --chown=strapi:nodejs /opt/app/dist ./dist
-COPY --from=builder --chown=strapi:nodejs /opt/app/build ./build
-COPY --from=builder --chown=strapi:nodejs /opt/app/public ./public
-COPY --from=builder --chown=strapi:nodejs /opt/app/.yarn ./.yarn
-
-# Copia arquivos de configuração e código fonte necessários
-COPY --chown=strapi:nodejs config ./config
-COPY --chown=strapi:nodejs database ./database
-COPY --chown=strapi:nodejs src ./src
-COPY --chown=strapi:nodejs scripts ./scripts
-COPY --chown=strapi:nodejs *.js *.json *.ts ./
+# Copia todo o código buildado do stage builder (exceto node_modules)
+# Usa RUN com --mount para copiar apenas arquivos/diretórios que existem
+RUN --mount=from=builder,source=/opt/app,target=/tmp/builder \
+    cd /tmp/builder && \
+    ( [ -d dist ] && cp -r dist /opt/app/ || true ) && \
+    ( [ -d build ] && cp -r build /opt/app/ || true ) && \
+    ( [ -d public ] && cp -r public /opt/app/ || true ) && \
+    ( [ -d packages ] && cp -r packages /opt/app/ || true ) && \
+    ( [ -d scripts ] && cp -r scripts /opt/app/ || true ) && \
+    ( [ -d examples ] && cp -r examples /opt/app/ || true ) && \
+    ( [ -d templates ] && cp -r templates /opt/app/ || true ) && \
+    ( [ -d docs ] && cp -r docs /opt/app/ || true ) && \
+    ( [ -d tests ] && cp -r tests /opt/app/ || true ) && \
+    for pattern in "*.js" "*.json" "*.ts"; do \
+      for file in $pattern; do \
+        [ -f "$file" ] && [ "$file" != "$pattern" ] && cp "$file" /opt/app/ || true; \
+      done; \
+    done && \
+    chown -R strapi:nodejs /opt/app
 
 # Define permissões corretas
 RUN chown -R strapi:nodejs /opt/app
