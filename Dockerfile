@@ -6,6 +6,7 @@ ENV NODE_ENV=${NODE_ENV}
 
 WORKDIR /opt/
 COPY package.json yarn.lock ./
+RUN corepack enable && corepack prepare yarn@4.5.0 --activate
 RUN yarn global add node-gyp
 RUN yarn config set network-timeout 600000 -g && yarn install
 ENV PATH=/opt/node_modules/.bin:$PATH
