@@ -76,10 +76,10 @@ WORKDIR /opt/app
 COPY package.json yarn.lock .yarnrc.yml* ./
 COPY .yarn ./.yarn
 
-# Instala apenas dependências de produção (sem devDependencies)
-# Yarn 4.x: primeiro instala tudo, depois foca apenas em produção usando workspaces focus
+# Instala dependências
+# Para monorepo do Strapi, instalamos todas as dependências
+# (devDependencies podem ser necessárias para o build já ter sido feito)
 RUN yarn install --immutable && \
-    yarn workspaces focus --production --all && \
     yarn cache clean
 
 # Copia todo o código buildado do stage builder (exceto node_modules)
