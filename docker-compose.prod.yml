@@ -1,0 +1,62 @@
+version: '3.8'
+
+services:
+  strapi:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        NODE_ENV: production
+    container_name: strapi-app
+    restart: unless-stopped
+    ports:
+      - '1337:1337'
+    environment:
+      - NODE_ENV=production
+      - HOST=0.0.0.0
+      - PORT=1337
+      # Configure suas variáveis de ambiente do Strapi aqui
+      # - DATABASE_CLIENT=postgres
+      # - DATABASE_HOST=postgres
+      # - DATABASE_PORT=5432
+      # - DATABASE_NAME=strapi
+      # - DATABASE_USERNAME=strapi
+      # - DATABASE_PASSWORD=strapi
+      # - JWT_SECRET=your-jwt-secret
+      # - ADMIN_JWT_SECRET=your-admin-jwt-secret
+      # - APP_KEYS=your-app-keys
+    volumes:
+      # Persiste uploads e dados
+      - ./public/uploads:/opt/app/public/uploads
+      - ./database:/opt/app/database
+      # Opcional: persiste logs
+      - ./logs:/opt/app/logs
+    networks:
+      - strapi-network
+    # Descomente se usar banco de dados
+    # depends_on:
+    #   - postgres
+
+  # Descomente para usar PostgreSQL
+  # postgres:
+  #   image: postgres:15-alpine
+  #   container_name: strapi-postgres
+  #   restart: unless-stopped
+  #   environment:
+  #     POSTGRES_USER: strapi
+  #     POSTGRES_PASSWORD: strapi
+  #     POSTGRES_DB: strapi
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
+  #   networks:
+  #     - strapi-network
+  #   ports:
+  #     - "5432:5432"
+
+networks:
+  strapi-network:
+    driver: bridge
+# Descomente se usar PostgreSQL
+# volumes:
+#   postgres_data:
+
