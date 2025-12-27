@@ -77,8 +77,9 @@ COPY package.json yarn.lock .yarnrc.yml* ./
 COPY .yarn ./.yarn
 
 # Instala apenas dependências de produção (sem devDependencies)
-# Usa --production flag para instalar apenas dependências de runtime
-RUN yarn install --production --immutable && \
+# Yarn 4.x: primeiro instala tudo, depois foca apenas em produção usando workspaces focus
+RUN yarn install --immutable && \
+    yarn workspaces focus --production --all && \
     yarn cache clean
 
 # Copia todo o código buildado do stage builder (exceto node_modules)
